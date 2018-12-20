@@ -1,0 +1,98 @@
+*&---------------------------------------------------------------------*
+*& Report  ZALV_01
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT ZALV_01.
+
+TABLES: SFLIGHT,SCUSTOM,SBOOK.
+
+TYPES: BEGIN OF ty_sflight,
+       customid  type sbook-customid,
+       passname  TYPE sbook-passname,
+       city      type scustom-city,
+       telephone type scustom-telephone,
+       email     type scustom-EMAIL,
+  END OF ty_sflight.
+
+DATA: i_flight type STANDARD TABLE OF ty_sflight INITIAL SIZE 0,
+      wa_flight like line of i_flight.
+
+DATA: i_fieldcat TYPE slis_t_fieldcat_alv WITH HEADER LINE ,
+       i_layout TYPE SLIS_LAYOUT_ALV,
+      wa_fieldcat TYPE slis_fieldcat_alv.
+
+
+
+SELECT-OPTIONS:sfldate FOR sbook-fldate,
+               scarrid FOR sbook-carrid.
+
+PERFORM create_layout.
+PERFORM create_fieldcat.
+PERFORM DATA_SELECT.
+PERFORM DATA_DISPLAY.
+
+FORM create_fieldcat.
+  wa_fieldcat-fieldname = 'customid'.
+   WA_Fieldcat-seltext_s = 'CUSTOMID'.
+  wa_fieldcat-col_pos = 1.
+  wa_fieldcat-inttype = 'N'.
+  wa_fieldcat-intlen = 6.
+  APPEND wa_fieldcat TO i_fieldcat.
+  CLEAR wa_fieldcat.
+ wa_fieldcat-fieldname = 'passname'.
+   WA_Fieldcat-seltext_s = 'PSAANAME'.
+  wa_fieldcat-col_pos = 2.
+  wa_fieldcat-inttype = 'C'.
+  wa_fieldcat-intlen = 6.
+  APPEND wa_fieldcat TO i_fieldcat.
+  CLEAR wa_fieldcat.
+  wa_fieldcat-fieldname = 'city'.
+  WA_Fieldcat-seltext_s = 'CITY'.
+  wa_fieldcat-col_pos = 3.
+  wa_fieldcat-inttype = 'C'.
+  wa_fieldcat-intlen = 6.
+  APPEND wa_fieldcat TO i_fieldcat.
+  CLEAR wa_fieldcat.
+   wa_fieldcat-fieldname = 'telephone'.
+   WA_Fieldcat-seltext_s = 'TELEPHONE'.
+  wa_fieldcat-col_pos = 4.
+  wa_fieldcat-inttype = 'C'.
+  wa_fieldcat-intlen = 6.
+  APPEND wa_fieldcat TO i_fieldcat.
+  CLEAR wa_fieldcat.
+  wa_fieldcat-fieldname = 'email'.
+  WA_Fieldcat-seltext_s = 'EMAIL'.
+  wa_fieldcat-col_pos = 5.
+  wa_fieldcat-inttype = 'C'.
+  wa_fieldcat-intlen = 6.
+  APPEND wa_fieldcat TO i_fieldcat.
+  CLEAR wa_fieldcat.
+ENDFORM.
+
+FORM create_layout.
+   i_layout-COLWIDTH_OPTIMIZE = 'X'.
+ENDFORM.
+
+FORM DATA_SELECT .
+SELECT sbook~customid,sbook~passname,scustom~city,scustom~telephone,scustom~EMAIL
+    FROM sbook LEFT join scustom on sbook~customid = scustom~id
+    INTO TABLE @i_flight
+    WHERE sbook~fldate IN @sfldate AND sbook~carrid IN @scarrid.
+ENDFORM.
+
+FORM DATA_DISPLAY.
+ CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+         IT_FIELDCAT                       = i_fieldcat[]
+         IS_LAYOUT                         = i_layout
+*          I_CALLBACK_USER_COMMAND           = 'USER_COMMAND'
+*          i_structure_name             = 'ZSBOOK'
+      TABLES
+           t_outtab                 = i_flight
+      EXCEPTIONS
+           program_error            = 1
+           OTHERS                   = 2.
+ENDFORM.
