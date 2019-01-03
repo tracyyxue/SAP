@@ -1,1 +1,163 @@
+*&---------------------------------------------------------------------*
+*& Report  Z_OO_01
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_OO_01.
 
+TABLES: SFLIGHT,SCUSTOM,SBOOK.
+
+TYPES: BEGIN OF ty_sflight,
+       customid  type sbook-customid,
+       passname  TYPE sbook-passname,
+       city      type scustom-city,
+       telephone type scustom-telephone,
+       email     type scustom-EMAIL,
+
+  END OF ty_sflight.
+
+DATA: i_flight type STANDARD TABLE OF ty_sflight INITIAL SIZE 0,
+      wa_flight like line of i_flight.
+
+DATA: sfldate TYPE sbook-fldate,
+      ssfldate TYPE sbook-fldate,
+      scarrid TYPE sbook-carrid,
+      Sscarrid TYPE sbook-carrid.
+
+*DATA: grf_grid TYPE REF TO cl_gui_alv_grid.
+
+*DATA:WA_CONTAINER TYPE SCRFNAME VALUE 'CON01',
+*     ALV_GRID TYPE REF TO CL_GUI_ALV_GRID,
+*     WA_CUSTOM_CONTAINER TYPE REF TO CL_GUI_CUSTOM_CONTAINER.
+
+DATA:OK_CODE TYPE SY-UCOMM .
+
+
+RANGES: G_sfldate FOR sbook-fldate,
+        G_scarrid  FOR sbook-carrid.
+ FORM RANGESINPUT.
+
+    CLEAR G_sfldate[].
+    CLEAR G_scarrid[].
+
+      IF sfldate IS NOT INITIAL AND SSFLDATE IS NOT INITIAL.
+        G_sfldate-SIGN   = 'I'.
+        G_sfldate-OPTION = 'BT'.
+        G_sfldate-LOW    = sfldate.
+        G_sfldate-HIGH   = ssfldate.
+        APPEND G_sfldate.
+      ENDIF.
+
+      IF scarrid  IS NOT INITIAL AND SSCARRID IS NOT INITIAL.
+        G_scarrid-SIGN   = 'I'.
+        G_scarrid-OPTION = 'BT'.
+        G_scarrid-LOW    = scarrid.
+         G_scarrid-HIGH   = sscarrid.
+        APPEND G_scarrid.
+      ENDIF.
+
+   ENDFORM.
+
+MODULE USER_COMMAND_0100 INPUT.
+  CASE OK_CODE.
+   WHEN 'OK'.
+    LEAVE TO SCREEN 0.
+      WHEN 'EXIT' OR 'CANCEL' OR 'BACK'.
+          LEAVE PROGRAM.
+    ENDCASE.
+ENDMODULE.
+
+CLASS LCL_ALV DEFINITION."ALV 操作类定义
+  PUBLIC SECTION.
+
+    DATA: gr_table TYPE REF TO CL_SALV_TABLE.
+  METHODS:
+            GETDATA,
+            ALV_PROCESS.
+ methods handle_double for event double_click
+            of cl_salv_events_table importing ROW COLUMN.
+*  handle_user_command FOR EVENT ADDED_FUNCTION OF CL_SALV_EVENTS_TABLE
+*       IMPORTING
+*         e_salv_function.
+  PRIVATE SECTION.
+  METHODS:
+      set_pf_status CHANGING con01 TYPE REF TO cl_salv_table.
+
+ ENDCLASS.
+
+CLASS LCL_ALV IMPLEMENTATION. "ALV操作类实现
+  METHOD:GETDATA.
+
+  SELECT sbook~customid,sbook~passname,scustom~city,scustom~telephone,scustom~EMAIL
+      FROM sbook LEFT join scustom on sbook~customid = scustom~id
+      INTO TABLE @i_flight
+      WHERE sbook~fldate in @G_sfldate AND sbook~carrid IN @G_scarrid.
+
+ ENDMETHOD.
+
+*   METHOD handle_user_command.
+**   Handle own functions defined in the toolbar
+*    CASE e_salv_function.
+*      WHEN 'TEST'.
+*
+*    ENDCASE.
+
+*  ENDMETHOD.
+  METHOD ALV_PROCESS.
+    DATA: LX_MSG TYPE REF TO CX_SALV_MSG.
+    TRY.
+      CL_SALV_TABLE=>FACTORY(
+        IMPORTING
+          R_SALV_TABLE = GR_TABLE
+        CHANGING
+          T_TABLE      = i_flight
+      ).
+        set handler handle_double for GR_TABLE->get_event( ).
+       CATCH CX_SALV_MSG INTO LX_MSG.
+    ENDTRY.
+      CALL METHOD set_pf_status
+      CHANGING
+        con01 = GR_TABLE.
+    GR_table->display( ).
+  endmethod.
+
+ method handle_double. " 功能I: 设定响应双击
+   READ TABLE I_FLIGHT INDEX ROW INTO WA_FLIGHT.
+   DATA: MSG(100).
+   CONCATENATE ' CUSTOMID：   ' WA_FLIGHT-CUSTOMID
+               ' PASSNAME:   '  WA_FLIGHT-PASSNAME
+               ' CITY：       '    WA_FLIGHT-CITY
+               ' TELEPHONE:  ' WA_FLIGHT-TELEPHONE
+               ' EMAIL:      ' WA_FLIGHT-EMAIL
+               INTO MSG.
+   MESSAGE MSG TYPE 'I'.
+  ENDMETHOD.
+
+  METHOD set_pf_status.
+
+*   调用自定义pf status
+    con01->set_screen_status(
+      pfstatus      =  'STANDARD'
+      report        =  'Z_OO_01'
+      set_functions = con01->c_functions_all ).
+
+  ENDMETHOD.
+
+
+ENDCLASS.
+*
+*MODULE status_0200 OUTPUT.
+*SET PF-STATUS 'STATUS_BAR'.
+*ENDMODULE.
+
+START-OF-SELECTION.
+
+  CALL SCREEN 100.
+  DATA LR_ALV TYPE REF TO LCL_ALV.
+  CREATE OBJECT LR_ALV.
+  LR_ALV->GETDATA( ).
+  LR_ALV->ALV_PROCESS( ).
+*  DATA(lr_event) = lr_alv->GR_TABLE->GET_EVENT( ).
+*  SET HANDLER LR_ALV->handle_user_command FOR lr_event.
