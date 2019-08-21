@@ -1,0 +1,52 @@
+*&---------------------------------------------------------------------*
+*& Report Z_TEST_FORM
+*&---------------------------------------------------------------------*
+
+**&---------------------------------------------------------------------*
+REPORT z_test_form.
+
+DATA: str1(20) TYPE c,
+      str2(20) TYPE c,
+      spl(2)   TYPE c VALUE ':'.
+DATA:    text(50) TYPE c.
+text = 'Testing : String_Split'.
+
+WRITE text .
+
+*PERFORM string_split USING text CHANGING str1 str2 .
+*
+*WRITE : STR1 , STR2.
+*FORM string_split USING TEXT CHANGING f_str1 f_str2 .
+*  SPLIT text AT spl INTO f_str1 f_str2 .
+*  WRITE :/ f_str1, f_str2 .
+*ENDFORM.
+
+
+CALL FUNCTION 'Z_SPLIT_TEXT'
+  EXPORTING
+    text      = text
+    spl       = ':'
+  IMPORTING
+   f_str1    = str1
+   f_str2    = str2
+  EXCEPTIONS NOT_FOUND = 1 OTHERS = 2.
+CASE SY-SUBRC.
+   WHEN 1.        WRITE / 'Not found'.
+   WHEN 2.        WRITE / 'Other errors'.
+*   WHEN OTHERS.   WRITE: / STR1, / STR2.
+ENDCASE.
+WRITE: / STR1, / STR2.
+*  EXCEPTIONS
+*    not_found = 1
+*    not_valid = 2
+*    too_long  = 3
+*    too_small = 4
+*    OTHERS    = 5.
+*CASE sy-subrc.
+*  WHEN 1.        WRITE / 'Not found'.
+*  WHEN 2.        WRITE / 'Other errors'.
+*  WHEN 3. WRITE / 'Other errors'.
+*  WHEN 4. WRITE / 'Other errors'.
+*  WHEN 5. WRITE / 'Other errors'.
+*  WHEN OTHERS.   WRITE: / str1, / str2 .
+*ENDCASE
