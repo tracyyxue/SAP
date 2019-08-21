@@ -1,0 +1,400 @@
+*----------------------------------------------------------------------*
+***INCLUDE Z_TEST_SCREEN2_STATUS_0100O01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS'.
+  SET TITLEBAR 'SFLIGHT'.
+
+*  DATA: lv_change_active TYPE abap_bool.
+  LOOP AT tracy-cols INTO lwa_cols_del.
+    IF lwa_cols_del-screen-input = 1.
+      lv_change_active = abap_true.
+      EXIT.
+    ELSE.
+      lv_change_active = abap_false.
+      EXIT.
+    ENDIF.
+  ENDLOOP.
+
+  LOOP AT SCREEN .
+    IF lv_change_active = abap_true.
+      IF screen-name  = 'UPDATE' OR screen-name  = 'DELETE'.
+        screen-invisible = '0' .
+        MODIFY SCREEN.
+      ENDIF.
+
+    ELSE .
+      IF screen-name  = 'UPDATE'  OR screen-name  = 'DELETE'.
+*      IF  screen-invisible = '0' .
+        screen-invisible = '1' .
+        MODIFY SCREEN.
+      ENDIF.
+
+    ENDIF.
+  ENDLOOP.
+ENDMODULE.
+
+MODULE display_sflight OUTPUT.
+*   GS_FLIGHT-CARRID    = GT_FLIGHT-CARRID.
+*   GS_FLIGHT-CONNID     = GT_FLIGHT-CONNID.
+*   GS_FLIGHT-FLDATE     = GT_FLIGHT-FLDATE.
+*   GS_FLIGHT-SEATSMAX     = GT_FLIGHT-SEATSMAX.
+  READ TABLE gt_flight INDEX tracy-current_line.
+*  gs_flight = gt_flight.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+
+
+MODULE user_command_0100 INPUT.
+*  DATA: lv_change_active TYPE abap_bool.
+  LOOP AT tracy-cols INTO lwa_cols_del.
+    IF lwa_cols_del-screen-input = 1.
+      lv_change_active = abap_true.
+      EXIT.
+    ENDIF.
+  ENDLOOP.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      CLEAR ok_code.
+      LEAVE TO SCREEN 0.
+    WHEN 'CLEAN'.
+      CLEAR gv_connid.
+      CLEAR gv_carrid.
+      REFRESH gt_flight.
+    WHEN 'SEARCH'.
+      CLEAR ok_code.
+      SELECT * FROM sflight INTO TABLE gt_flight
+               WHERE carrid = gv_carrid AND connid = gv_connid.
+    WHEN 'UPDATE'.
+      IF lv_change_active = abap_true.
+        CLEAR ok_code.
+        PERFORM gt_update .
+      ELSE.
+        MESSAGE i007(zz).
+      ENDIF.
+    WHEN 'DELETE'.
+      IF lv_change_active = abap_true.
+        CLEAR ok_code.
+        PERFORM gt_delete.
+      ELSE.
+        MESSAGE i009(zz).
+      ENDIF.
+    WHEN 'CHANGE'.
+      CLEAR ok_code.
+      PERFORM gt_change .
+*   IF lv_change_active = abap_true.
+*            LOOP AT SCREEN .
+*        IF screen-name  = 'UPDATE'.
+*          screen-invisible = '1' .
+*          MODIFY SCREEN.
+*        ENDIF .
+*      ENDLOOP.
+*      ELSEIF  screen-name  = 'UPDATE'.
+*ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+
+MODULE gt_modify INPUT.
+  MODIFY gt_flight INDEX tracy-current_line.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form GT_UPDATE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM gt_update .
+  UPDATE sflight FROM TABLE gt_flight.
+  IF sy-subrc = 0.
+    MESSAGE i006(zz).
+  ELSE.
+    MESSAGE i007(zz).
+  ENDIF.
+ENDFORM.
+
+FORM gt_delete.
+
+*  CHECK lv_change_active = abap_true.
+  GET CURSOR LINE linea.
+  CHECK sy-subrc = 0.
+  linea = tracy-top_line + linea - 1.
+  READ TABLE gt_flight INDEX linea.
+  APPEND gt_flight TO delete_flight.
+  DELETE gt_flight INDEX : linea.
+  DELETE sflight FROM TABLE delete_flight.
+  IF sy-subrc = 0.
+    MESSAGE i008(zz).
+  ELSE.
+    MESSAGE i009(zz).
+  ENDIF.
+ENDFORM.
+
+FORM gt_change.
+  DATA lwa_cols LIKE LINE OF tracy-cols.
+  LOOP AT tracy-cols INTO lwa_cols.
+    IF lwa_cols-screen-input = 0.
+      lwa_cols-screen-input = 1.
+    ELSE.
+      lwa_cols-screen-input = 0.
+    ENDIF.
+    MODIFY tracy-cols FROM lwa_cols INDEX sy-tabix.
+  ENDLOOP.
+
+*  IF lwa_cols-screen-input = 1.
+*    LOOP AT SCREEN .
+*      IF screen-name  = 'UPDATE'.
+*        screen-invisible = '1' .
+*        MODIFY SCREEN.
+*      ENDIF .
+*    ENDLOOP.
+*ENDIF.
+ENDFORM.
+
+
+*    LOOP AT SCREEN .
+*    IF screen-name  = 'DELETE' OR lwa_cols-screen-input = '0' AND lwa_cols-screen-input = 0.
+*      screen-invisible = '1' .
+*      MODIFY SCREEN.
+*      ENDIF.
+*      ENDLOOP.
+
+
+*
+*screen100
+*
+*
+PROCESS BEFORE OUTPUT.
+  MODULE status_0100.
+  LOOP AT gt_flight WITH CONTROL tracy
+                     CURSOR tracy-current_line.
+    MODULE display_sflight.
+  ENDLOOP.
+
+
+
+PROCESS AFTER INPUT.
+
+  LOOP AT gt_flight.
+*    FIELD gs_flight-carrid. .
+*    FIELD gs_flight-connid.
+**    FIELD gs_flight-fldate.
+*    FIELD gs_flight-price.
+*    FIELD gs_flight-currency.
+*    FIELD gs_flight-planetype.
+*    FIELD gs_flight-seatsmax.
+*    FIELD gs_flight-seatsocc.
+*    FIELD gs_flight-paymentsum .
+*    FIELD gs_flight-seatsmax_b .
+*    FIELD gs_flight-seatsocc_b.
+*    FIELD gs_flight-seatsmax_f .
+*    FIELD gs_flight-seatsocc_f .
+    CHAIN.
+      FIELD gt_flight-carrid. .
+      FIELD gt_flight-connid.
+      FIELD gt_flight-fldate.
+      FIELD gt_flight-price.
+      FIELD gt_flight-currency.
+      FIELD gt_flight-planetype.
+      FIELD gt_flight-seatsmax.
+      FIELD gt_flight-seatsocc.
+      FIELD gt_flight-paymentsum .
+      FIELD gt_flight-seatsmax_b .
+      FIELD gt_flight-seatsocc_b.
+      FIELD gt_flight-seatsmax_f .
+      FIELD gt_flight-seatsocc_f .
+      MODULE gt_modify ON CHAIN-REQUEST.
+    ENDCHAIN.
+  ENDLOOP.
+*    MODULE set_line_count.
+  MODULE user_command_0100.
+
+
+
+*
+*
+*modules
+*
+*
+*----------------------------------------------------------------------*
+***INCLUDE Z_TEST_SCREEN2_STATUS_0100O01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS'.
+  SET TITLEBAR 'SFLIGHT'.
+
+*  DATA: lv_change_active TYPE abap_bool.
+  LOOP AT tracy-cols INTO lwa_cols_del.
+    IF lwa_cols_del-screen-input = 1.
+      lv_change_active = abap_true.
+      EXIT.
+    ELSE.
+      lv_change_active = abap_false.
+      EXIT.
+    ENDIF.
+  ENDLOOP.
+
+  LOOP AT SCREEN .
+    IF lv_change_active = abap_true.
+      IF screen-name  = 'UPDATE' OR screen-name  = 'DELETE'.
+        screen-invisible = '0' .
+        MODIFY SCREEN.
+      ENDIF.
+
+    ELSE .
+      IF screen-name  = 'UPDATE'  OR screen-name  = 'DELETE'.
+*      IF  screen-invisible = '0' .
+        screen-invisible = '1' .
+        MODIFY SCREEN.
+      ENDIF.
+
+    ENDIF.
+  ENDLOOP.
+ENDMODULE.
+
+MODULE display_sflight OUTPUT.
+*   GS_FLIGHT-CARRID    = GT_FLIGHT-CARRID.
+*   GS_FLIGHT-CONNID     = GT_FLIGHT-CONNID.
+*   GS_FLIGHT-FLDATE     = GT_FLIGHT-FLDATE.
+*   GS_FLIGHT-SEATSMAX     = GT_FLIGHT-SEATSMAX.
+  READ TABLE gt_flight INDEX tracy-current_line.
+*  gs_flight = gt_flight.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+
+
+MODULE user_command_0100 INPUT.
+*  DATA: lv_change_active TYPE abap_bool.
+  LOOP AT tracy-cols INTO lwa_cols_del.
+    IF lwa_cols_del-screen-input = 1.
+      lv_change_active = abap_true.
+      EXIT.
+    ENDIF.
+  ENDLOOP.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      CLEAR ok_code.
+      LEAVE TO SCREEN 0.
+    WHEN 'CLEAN'.
+      CLEAR gv_connid.
+      CLEAR gv_carrid.
+      REFRESH gt_flight.
+    WHEN 'SEARCH'.
+      CLEAR ok_code.
+      SELECT * FROM sflight INTO TABLE gt_flight
+               WHERE carrid = gv_carrid AND connid = gv_connid.
+    WHEN 'UPDATE'.
+      IF lv_change_active = abap_true.
+        CLEAR ok_code.
+        PERFORM gt_update .
+      ELSE.
+        MESSAGE i007(zz).
+      ENDIF.
+    WHEN 'DELETE'.
+      IF lv_change_active = abap_true.
+        CLEAR ok_code.
+        PERFORM gt_delete.
+      ELSE.
+        MESSAGE i009(zz).
+      ENDIF.
+    WHEN 'CHANGE'.
+      CLEAR ok_code.
+      PERFORM gt_change .
+*   IF lv_change_active = abap_true.
+*            LOOP AT SCREEN .
+*        IF screen-name  = 'UPDATE'.
+*          screen-invisible = '1' .
+*          MODIFY SCREEN.
+*        ENDIF .
+*      ENDLOOP.
+*      ELSEIF  screen-name  = 'UPDATE'.
+*ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+
+MODULE gt_modify INPUT.
+  MODIFY gt_flight INDEX tracy-current_line.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form GT_UPDATE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM gt_update .
+  UPDATE sflight FROM TABLE gt_flight.
+  IF sy-subrc = 0.
+    MESSAGE i006(zz).
+  ELSE.
+    MESSAGE i007(zz).
+  ENDIF.
+ENDFORM.
+
+FORM gt_delete.
+
+*  CHECK lv_change_active = abap_true.
+  GET CURSOR LINE linea.
+  CHECK sy-subrc = 0.
+  linea = tracy-top_line + linea - 1.
+  READ TABLE gt_flight INDEX linea.
+  APPEND gt_flight TO delete_flight.
+  DELETE gt_flight INDEX : linea.
+  DELETE sflight FROM TABLE delete_flight.
+  IF sy-subrc = 0.
+    MESSAGE i008(zz).
+  ELSE.
+    MESSAGE i009(zz).
+  ENDIF.
+ENDFORM.
+
+FORM gt_change.
+  DATA lwa_cols LIKE LINE OF tracy-cols.
+  LOOP AT tracy-cols INTO lwa_cols.
+    IF lwa_cols-screen-input = 0.
+      lwa_cols-screen-input = 1.
+    ELSE.
+      lwa_cols-screen-input = 0.
+    ENDIF.
+    MODIFY tracy-cols FROM lwa_cols INDEX sy-tabix.
+  ENDLOOP.
+
+*  IF lwa_cols-screen-input = 1.
+*    LOOP AT SCREEN .
+*      IF screen-name  = 'UPDATE'.
+*        screen-invisible = '1' .
+*        MODIFY SCREEN.
+*      ENDIF .
+*    ENDLOOP.
+*ENDIF.
+ENDFORM.
+
+
+*    LOOP AT SCREEN .
+*    IF screen-name  = 'DELETE' OR lwa_cols-screen-input = '0' AND lwa_cols-screen-input = 0.
+*      screen-invisible = '1' .
+*      MODIFY SCREEN.
+*      ENDIF.
+*      ENDLOOP.
