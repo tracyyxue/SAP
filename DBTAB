@@ -1,0 +1,83 @@
+*&---------------------------------------------------------------------*
+*& Report Z_TEST_DBTAB
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_test_dbtab.
+
+*TABLES ztable.
+tables sflight.
+DATA itab LIKE sflight OCCURS 50 WITH HEADER LINE.
+
+*itab-carrid = 'AA'. itab-connid = '001'.itab-fldate = '20190813' .
+*APPEND itab.
+itab-carrid = 'AA'. itab-connid = '100'.itab-fldate = '20190819' .ITAB-currency = '99'.ITAB-PRICE = '555'.itab-seatsmax = '233'.
+APPEND itab.
+itab-carrid = 'AA'. itab-connid = '100'.itab-fldate = '20190811' .ITAB-currency = '199'.ITAB-PRICE = '444'.itab-seatsmax = '433'.
+APPEND itab.
+itab-carrid = 'AA'. itab-connid = '100'.itab-fldate = '20190815' .ITAB-currency = '500'.ITAB-PRICE = '969'.itab-seatsmax = '233'.
+APPEND itab.
+itab-carrid = 'AA'. itab-connid = '100'.itab-fldate = '20190823' .ITAB-currency = '444'.ITAB-PRICE = '50'.itab-seatsmax = '133'.
+APPEND itab.
+*itab-name = 'ADA'. itab-department = 'ABS'.itab-salary = '21000' .
+*APPEND itab.
+*itab-name = 'TINA'. itab-department = 'BBS'.itab-salary = '25000' .
+*APPEND itab.
+*itab-name = 'LISA'. itab-department = 'CBS'.itab-salary = '10000' .
+*APPEND itab.
+
+INSERT SFLIGHT FROM TABLE itab ACCEPTING DUPLICATE KEYS.
+*DATA itab LIKE ztable OCCURS 50 WITH HEADER LINE.
+*DATA itab1 LIKE ztable OCCURS 50 WITH HEADER LINE.
+*DATA itab2 LIKE ztable OCCURS 50 WITH HEADER LINE.
+*itab-name = 'MIKE'. itab-department = 'ABS'.itab-salary = '20000' .
+*APPEND itab.
+*itab-name = 'ANNA'. itab-department = 'ABS'.itab-salary = '18000' .
+*APPEND itab.
+*itab-name = 'ADA'. itab-department = 'ABS'.itab-salary = '21000' .
+*APPEND itab.
+*itab-name = 'TINA'. itab-department = 'BBS'.itab-salary = '25000' .
+*APPEND itab.
+*itab-name = 'LISA'. itab-department = 'CBS'.itab-salary = '10000' .
+*APPEND itab.
+*
+*INSERT ztable FROM TABLE itab ACCEPTING DUPLICATE KEYS.
+
+*DATA itab LIKE ztable.
+*ITAB-NAME = 'MIKE'. ITAB-DEPARTMENT = 'ABS'.itab-salary = '1000' .
+*INSERT INTO ztable VALUES itab.
+*
+*ITAB-NAME = 'ANNA'. ITAB-DEPARTMENT = 'ABS'.itab-salary = '1000' .
+*INSERT ztable FROM itab.
+
+*IF SY-SUBRC = 0.
+*  WRITE:/ ZTABLE-name , ztable-department , ztable-salary.
+*ELSEIF SY-SUBRC = 4.
+*   WRITE:/ 'error'.
+*ENDIF.
+*
+*SELECT * FROM ztable INTO TABLE itab.
+*
+*LOOP AT itab .
+*WRITE: / itab-name , itab-department , itab-salary.
+*ENDLOOP.
+*
+*SELECT * FROM ztable INTO TABLE itab1 .
+*
+*FIELD-SYMBOLS: <fs>  like ITAB1  .
+*LOOP AT itab1 ASSIGNING <FS> .
+*<fs>-salary = <fs>-salary + 5000.
+*UPDATE ztable FROM TABLE ITAB1.
+*WRITE : / <fs>-name , <fs>-department , <fs>-salary.
+*ENDLOOP.
+
+*itab2-name = 'TINA'. itab2-department = 'BBS'.itab2-salary = '25000' .
+*APPEND itab2.
+*DELETE ztable FROM TABLE itab2 .
+
+*DELETE FROM ztable WHERE department = 'CBS'.
+*
+*SELECT * FROM ztable INTO TABLE itab2.
+*LOOP AT itab2 .
+*WRITE: / itab2-name , itab2-department , itab2-salary.
+*ENDLOOP.
