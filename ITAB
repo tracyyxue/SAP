@@ -1,0 +1,67 @@
+*&---------------------------------------------------------------------*
+*& Report Z_TEST_ITAB
+*&---------------------------------------------------------------------*
+*&人名 工资 部门 删除非dbs部门的人  修改自己的工资  write 输出
+*&---------------------------------------------------------------------*
+REPORT z_test_itab.
+DATA: BEGIN OF payroll,
+        name(10)       TYPE c,
+        department(10) TYPE c,
+        pay            TYPE i,
+      END OF payroll.
+DATA itab LIKE payroll OCCURS 10.
+
+
+payroll-name = 'Tracy'. payroll-department = 'DBS'. payroll-pay = 20000.
+APPEND payroll TO itab.
+
+payroll-name = 'Tina'. payroll-department = 'DBS'. payroll-pay = 23000.
+APPEND payroll TO itab.
+
+payroll-name = 'Anna'. payroll-department = 'DBS'. payroll-pay = 6000.
+APPEND payroll TO itab.
+
+payroll-name = 'Ada'. payroll-department = 'WBS'. payroll-pay = 20300.
+APPEND payroll TO itab.
+
+*LOOP AT itab INTO payroll.
+*   WRITE :/ payroll-name ,payroll-department , payroll-pay .
+*ENDLOOP.
+
+
+*LOOP AT ITAB INTO PAYROLL.
+*   IF payroll-name = 'Tracy'.
+*       payroll-pay = 25000.
+*      MODIFY ITAB FROM payroll.
+*   ENDIF.
+*ENDLOOP.
+
+*DELETE itab WHERE department <> 'DBS'.
+*
+*LOOP AT itab INTO payroll WHERE name = 'Tracy'.
+*  payroll-pay = 28000.
+*  MODIFY itab FROM payroll.
+*ENDLOOP.
+
+*LOOP AT ITAB INTO payroll .
+*   IF payroll-department <> 'DBS'.
+*      DELETE ITAB.
+*   ENDIF.
+*ENDLOOP.
+
+LOOP AT itab INTO payroll.
+  WRITE :/ payroll-name ,payroll-department , payroll-pay .
+ENDLOOP.
+
+*FIELD-SYMBOLS 每个人工资加500.
+
+FIELD-SYMBOLS: <fs>  like payroll  .
+
+LOOP AT itab ASSIGNING <fs> .
+  <fs>-pay =  <fs>-pay + 500 .
+*    WRITE :/ payroll-name ,payroll-department , payroll-pay .
+ENDLOOP.
+
+LOOP AT itab INTO payroll.
+  WRITE :/ payroll-name ,payroll-department , payroll-pay .
+ENDLOOP.
